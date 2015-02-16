@@ -1,7 +1,6 @@
 package com.carolynvs.bamboo.plugin.gitversion;
 
 import com.atlassian.bamboo.process.BambooProcessHandler;
-import com.atlassian.bamboo.process.ProcessService;
 import com.atlassian.bamboo.task.*;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.utils.process.*;
@@ -15,6 +14,7 @@ import java.util.*;
 
 public class GitVersionTask implements TaskType
 {
+    private static final String PREFIX = "GitVersion";
     private final CapabilityContext capabilityContext;
 
     public GitVersionTask(CapabilityContext capabilityContext)
@@ -25,28 +25,47 @@ public class GitVersionTask implements TaskType
     @NotNull
     @Override
     public TaskResult execute(@NotNull TaskContext taskContext)
-            throws TaskException
     {
-        StringOutputHandler outputHandler = new StringOutputHandler();
-        ExternalProcess gitVersionProcess = buildGitVersionProcess(outputHandler);
+        TaskResultBuilder resultBuilder = TaskResultBuilder.create(taskContext);
+
+        StringOutputHandler gitVersionOutputHandler = new StringOutputHandler();
+        ExternalProcess gitVersionProcess = buildGitVersionProcess(gitVersionOutputHandler);
         gitVersionProcess.execute();
 
-        if(gitVersionProcess.getHandler().succeeded())
+        String output = gitVersionOutputHandler.getOutput();
+        if(!gitVersionProcess.getHandler().succeeded())
         {
-            Map<String, String> metadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
-
-            String output = outputHandler.getOutput();
-            GitVersionOutputParser parser = new GitVersionOutputParser(output);
-
-            String assemblyVersion = parser.getAssemblySemVer();
-            if (assemblyVersion != null)
-            {
-                taskContext.getBuildLogger().addBuildLogEntry(String.format("GitVersion.AssemblySemVer=%s", assemblyVersion));
-                metadata.put("GitVersion.AssemblySemVer", assemblyVersion);
-            }
+            taskContext.getBuildLogger().addErrorLogEntry(String.format("Error executing GitVersion\r\n%s", output));
+            return resultBuilder.failed().build();
         }
 
-        return TaskResultBuilder.create(taskContext).success().build();
+        Map<String, String> metadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
+        ObjectMapper jsonParser = new ObjectMapper();
+
+        JsonNode jsonNode;
+        try
+        {
+            jsonNode = jsonParser.readTree(output);
+        }
+        catch (IOException e)
+        {
+            taskContext.getBuildLogger().addErrorLogEntry("Error parsing json output of GitVersion", e);
+            return resultBuilder.failedWithError().build();
+        }
+
+        for(Iterator<Map.Entry<String, JsonNode>> results = jsonNode.getFields(); results.hasNext();)
+        {
+            Map.Entry<String, JsonNode> result = results.next();
+            String key = String.format("%s.%s", PREFIX, result.getKey());
+
+            JsonNode jsonValue = result.getValue();
+            String value = jsonValue.isTextual() ? jsonValue.getTextValue() : jsonValue.toString();
+
+            taskContext.getBuildLogger().addBuildLogEntry(String.format("%s=%s", key, value));
+            metadata.put(key, value);
+        }
+
+        return resultBuilder.success().build();
     }
 
     @Nullable
@@ -66,25 +85,5 @@ public class GitVersionTask implements TaskType
                 .build();
 
         return process;
-    }
-}
-
-class GitVersionOutputParser
-{
-    private String assemblySemVer;
-
-    public GitVersionOutputParser(String output)
-    {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            JsonNode jsonNode = mapper.readTree(output);
-            assemblySemVer = jsonNode.get("AssemblySemVer").getTextValue();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public String getAssemblySemVer() {
-        return assemblySemVer;
     }
 }
