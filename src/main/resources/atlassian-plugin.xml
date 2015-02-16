@@ -24,5 +24,9 @@
     <taskType key="GitVersionTask" name="GitVersion" class="com.carolynvs.bamboo.plugin.gitversion.GitVersionTask">
         <description>Makes GitVersion results available as Bamboo metadata and environment variables</description>
     </taskType>
-    
+
+    <capabilityType key="com.carolynvs.bamboo.plugin.gitversion.GitVersionCapability" name="GitVersion" class="com.carolynvs.bamboo.plugin.gitversion.GitVersionCapability" sortOrder="1000">
+        <description>The GitVersion executable, e.g. C:\ProgramData\Chocolatey\lib\GitVersion.Portable.2.0.1\Tools\GitVersion.exe</description>
+        <resource type="freemarker" name="edit" location="capability/edit.ftl"/>
+    </capabilityType>
 </atlassian-plugin>
