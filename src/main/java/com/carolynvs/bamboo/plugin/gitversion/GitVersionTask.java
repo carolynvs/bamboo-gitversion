@@ -1,5 +1,7 @@
 package com.carolynvs.bamboo.plugin.gitversion;
 
+import com.atlassian.bamboo.build.BuildOutputLogEntry;
+import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.process.BambooProcessHandler;
 import com.atlassian.bamboo.task.*;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
@@ -9,6 +11,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -27,15 +30,17 @@ public class GitVersionTask implements TaskType
     public TaskResult execute(@NotNull TaskContext taskContext)
     {
         TaskResultBuilder resultBuilder = TaskResultBuilder.create(taskContext);
+        BuildLogger log = taskContext.getBuildLogger();
 
         StringOutputHandler gitVersionOutputHandler = new StringOutputHandler();
-        ExternalProcess gitVersionProcess = buildGitVersionProcess(gitVersionOutputHandler);
+        ExternalProcess gitVersionProcess = buildGitVersionProcess(taskContext.getWorkingDirectory(), gitVersionOutputHandler);
+        log.addBuildLogEntry(String.format("Executing %s", gitVersionProcess.getCommandLine()));
         gitVersionProcess.execute();
 
         String output = gitVersionOutputHandler.getOutput();
         if(!gitVersionProcess.getHandler().succeeded())
         {
-            taskContext.getBuildLogger().addErrorLogEntry(String.format("Error executing GitVersion\r\n%s", output));
+            log.addErrorLogEntry(String.format("Error executing GitVersion\r\n%s", output));
             return resultBuilder.failed().build();
         }
 
@@ -49,7 +54,7 @@ public class GitVersionTask implements TaskType
         }
         catch (IOException e)
         {
-            taskContext.getBuildLogger().addErrorLogEntry("Error parsing json output of GitVersion", e);
+            log.addErrorLogEntry("Error parsing json output of GitVersion", e);
             return resultBuilder.failedWithError().build();
         }
 
@@ -61,7 +66,7 @@ public class GitVersionTask implements TaskType
             JsonNode jsonValue = result.getValue();
             String value = jsonValue.isTextual() ? jsonValue.getTextValue() : jsonValue.toString();
 
-            taskContext.getBuildLogger().addBuildLogEntry(String.format("%s=%s", key, value));
+            log.addBuildLogEntry(String.format("%s=%s", key, value));
             metadata.put(key, value);
         }
 
@@ -74,13 +79,13 @@ public class GitVersionTask implements TaskType
         return capabilityContext.getCapabilityValue(GitVersionCapability.CAPABILITY_KEY);
     }
 
-    private ExternalProcess buildGitVersionProcess(OutputHandler outputHandler)
+    private ExternalProcess buildGitVersionProcess(File gitRepo, OutputHandler outputHandler)
     {
         String gitversionExecutable = getGitVersionCapability();
 
         final PluggableProcessHandler handler = new BambooProcessHandler(outputHandler, outputHandler);
         ExternalProcess process = new ExternalProcessBuilder()
-                .command(Lists.newArrayList(gitversionExecutable))
+                .command(Lists.newArrayList(gitversionExecutable, gitRepo.getAbsolutePath()))
                 .handler(handler)
                 .build();
 
