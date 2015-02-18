@@ -1,7 +1,10 @@
 package com.carolynvs.bamboo.plugin.gitversion;
 
 import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.atlassian.bamboo.configuration.ConfigurationMap;
+import com.atlassian.bamboo.plugins.git.GitCapabilityTypeModule;
 import com.atlassian.bamboo.process.BambooProcessHandler;
+import com.atlassian.bamboo.process.ProcessService;
 import com.atlassian.bamboo.task.TaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -14,57 +17,83 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class GitVersionTask implements TaskType
 {
     private static final String PREFIX = "GitVersion";
     private final CapabilityContext capabilityContext;
+    private final ProcessService processService;
 
-    public GitVersionTask(CapabilityContext capabilityContext)
+    public GitVersionTask(CapabilityContext capabilityContext, ProcessService processService)
     {
         this.capabilityContext = capabilityContext;
+        this.processService = processService;
     }
 
     @NotNull
     @Override
-    public TaskResult execute(@NotNull TaskContext taskContext)
-    {
+    public TaskResult execute(@NotNull TaskContext taskContext) {
         TaskResultBuilder resultBuilder = TaskResultBuilder.create(taskContext);
         BuildLogger buildLogger = taskContext.getBuildLogger();
 
-        GitVersionInput input = readConfiguration(taskContext);
-        GitVersionOutput output = executeGitVersion(input, buildLogger);
-        if(!output.Succeeded)
+        GitVersionTaskConfiguration config = readConfiguration(taskContext);
+
+        boolean fixDetachedHeadSucceeded = fixDetachedHead(config, taskContext);
+        if (!fixDetachedHeadSucceeded)
+            return resultBuilder.failed().build();
+
+        GitVersionOutput gitVersionOutput = executeGitVersion(config, buildLogger);
+        if(!gitVersionOutput.Succeeded)
         {
-            buildLogger.addErrorLogEntry(output.ErrorMessage, output.Exception);
+            buildLogger.addErrorLogEntry(gitVersionOutput.ErrorMessage, gitVersionOutput.Exception);
             return resultBuilder.failed().build();
         }
 
         Map<String, String> buildMetadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
-        saveVariables(output.Variables, buildMetadata, buildLogger);
+        saveVariables(gitVersionOutput.Variables, buildMetadata, buildLogger);
 
         return resultBuilder.success().build();
     }
 
-    private GitVersionOutput executeGitVersion(GitVersionInput input, BuildLogger buildLogger)
+    private boolean fixDetachedHead(GitVersionTaskConfiguration input, TaskContext taskContext)
     {
-        StringOutputHandler processOutputHandler = new StringOutputHandler();
-        ExternalProcess gitVersionProcess = buildGitVersionProcess(input, processOutputHandler);
-        buildLogger.addBuildLogEntry(String.format("Executing %s", gitVersionProcess.getCommandLine()));
-        gitVersionProcess.execute();
+        taskContext.getBuildLogger().addBuildLogEntry("Ensuring that we are not in a detached HEAD state...");
 
-        return new GitVersionOutput(gitVersionProcess.getHandler(), processOutputHandler);
+        ExternalProcess gitCheckout = executeGitCommand(input.Repository, taskContext, "checkout", "--force", input.Branch);
+        if(!gitCheckout.getHandler().succeeded())
+            return false;
+
+        ExternalProcess gitReset = executeGitCommand(input.Repository, taskContext, "reset", "--hard", input.Revision);
+        if(!gitReset.getHandler().succeeded())
+            return false;
+
+        return true;
     }
 
-    private GitVersionInput readConfiguration(TaskContext taskContext)
+    private GitVersionOutput executeGitVersion(GitVersionTaskConfiguration input, BuildLogger buildLogger)
     {
-        String repoPath =  taskContext.getConfigurationMap().get(GitVersionTaskConfigurator.REPO_PATH);
-        Path repo = taskContext.getWorkingDirectory().toPath().resolve(repoPath);
-        return new GitVersionInput(repo.toString());
+        StringOutputHandler processOutputHandler = new StringOutputHandler();
+        ExternalProcess process = executeGitVersionCommand(input, processOutputHandler, buildLogger);
+        process.execute();
+        return new GitVersionOutput(process.getHandler(), processOutputHandler);
+    }
+
+    private GitVersionTaskConfiguration readConfiguration(TaskContext taskContext)
+    {
+        ConfigurationMap taskConfig = taskContext.getConfigurationMap();
+        String repoPath =  taskConfig.get(GitVersionTaskConfigurator.REPO_PATH);
+        File buildDirectory = taskContext.getWorkingDirectory();
+        File repo = new File(buildDirectory, repoPath);
+
+        // todo: Make this configurable, currently assumes we are only working with the default repository
+        Map<String, String> buildMetaData = taskContext.getBuildContext().getCurrentResult().getCustomBuildData();
+        String branch = buildMetaData.get("planRepository.branchName");
+        String revision = buildMetaData.get("planRepository.revision");
+
+        return new GitVersionTaskConfiguration(repo, branch, revision);
     }
 
     /**
@@ -86,31 +115,55 @@ public class GitVersionTask implements TaskType
     }
 
     @Nullable
-    private String getGitVersionCapability()
+    private String getGitVersionExecutable()
     {
         return capabilityContext.getCapabilityValue(GitVersionCapability.CAPABILITY_KEY);
     }
 
-    private ExternalProcess buildGitVersionProcess(GitVersionInput input, OutputHandler outputHandler)
+    @Nullable
+    public String getGitExecutable()
     {
-        String gitversionExecutable = getGitVersionCapability();
+        return capabilityContext.getCapabilityValue(GitCapabilityTypeModule.GIT_CAPABILITY);
+    }
+
+    private ExternalProcess executeGitVersionCommand(GitVersionTaskConfiguration input, OutputHandler outputHandler, BuildLogger buildLogger)
+    {
+        String gitversionExecutable = getGitVersionExecutable();
 
         final PluggableProcessHandler handler = new BambooProcessHandler(outputHandler, outputHandler);
-        ExternalProcess process = new ExternalProcessBuilder()
-                .command(Lists.newArrayList(gitversionExecutable, input.Path))
+        ExternalProcess process = new com.atlassian.utils.process.ExternalProcessBuilder()
+                .command(Lists.newArrayList(gitversionExecutable, input.Repository.getAbsolutePath()))
                 .handler(handler)
                 .build();
+        buildLogger.addBuildLogEntry(String.format("Executing %s", process.getCommandLine()));
 
         return process;
     }
 
-    private class GitVersionInput
+    private ExternalProcess executeGitCommand(File workingDirectory, TaskContext taskContext, String... commandArgs)
     {
-        public final String Path;
+        List<String> command = new ArrayList<String>();
+        command.add(getGitExecutable());
+        command.addAll(Arrays.asList(commandArgs));
 
-        public GitVersionInput(String path)
+        com.atlassian.bamboo.process.ExternalProcessBuilder processBuilder = new com.atlassian.bamboo.process.ExternalProcessBuilder()
+                .command(command)
+                .workingDirectory(workingDirectory);
+
+        return processService.executeExternalProcess(taskContext, processBuilder);
+    }
+
+    private class GitVersionTaskConfiguration
+    {
+        public final File Repository;
+        public final String Branch;
+        public final String Revision;
+
+        public GitVersionTaskConfiguration(File repository, String branch, String revision)
         {
-            Path = path;
+            Repository = repository;
+            Branch = branch;
+            Revision = revision;
         }
     }
 
