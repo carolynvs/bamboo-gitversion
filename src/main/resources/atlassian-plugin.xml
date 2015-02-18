@@ -32,4 +32,6 @@
         <description>The GitVersion executable, e.g. C:\ProgramData\Chocolatey\lib\GitVersion.Portable.2.0.1\Tools\GitVersion.exe</description>
         <resource type="freemarker" name="edit" location="capability/edit.ftl"/>
     </capabilityType>
+
+    <component-import key="capabilityContext" interface="com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext" />
 </atlassian-plugin>
