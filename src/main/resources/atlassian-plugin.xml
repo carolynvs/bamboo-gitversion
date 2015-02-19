@@ -23,6 +23,7 @@
 
     <taskType key="GitVersionTask" name="GitVersion" class="com.carolynvs.bamboo.plugin.gitversion.GitVersionTask">
         <description>Makes GitVersion results available as Bamboo metadata and environment variables</description>
+        <resource type="download" name="icon" location="images/pluginLogo.png"/>
         <configuration class="com.carolynvs.bamboo.plugin.gitversion.GitVersionTaskConfigurator"/>
         <resource type="freemarker" name="edit" location="task/edit.ftl"/>
         <resource type="freemarker" name="view" location="task/view.ftl"/>
