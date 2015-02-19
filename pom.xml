@@ -14,7 +14,7 @@
         <url>http://carolynvanslyck.com/</url>
     </organization>
 
-    <name>gitversion</name>
+    <name>GitVersion</name>
     <description>Makes GitVersion results available as Bamboo metadata and environment variables</description>
     <packaging>atlassian-plugin</packaging>
 
