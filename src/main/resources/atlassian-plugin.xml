@@ -13,11 +13,7 @@
     <!-- add our web resources -->
     <web-resource key="gitversion-resources" name="gitversion Web Resources">
         <dependency>com.atlassian.auiplugin:ajs</dependency>
-        
-        <resource type="download" name="gitversion.css" location="/css/gitversion.css"/>
-        <resource type="download" name="gitversion.js" location="/js/gitversion.js"/>
         <resource type="download" name="images/" location="/images"/>
-
         <context>gitversion</context>
     </web-resource>
 
