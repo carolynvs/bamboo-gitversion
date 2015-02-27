@@ -1,6 +1,5 @@
 package com.carolynvs.bamboo.plugin.gitversion;
 
-import com.atlassian.bamboo.build.BuildOutputLogEntry;
 import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.configuration.ConfigurationMap;
 import com.atlassian.bamboo.plugins.git.GitCapabilityTypeModule;
@@ -10,6 +9,7 @@ import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.task.TaskType;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
+import com.atlassian.bamboo.v2.build.agent.capability.CapabilityDefaultsHelper;
 import com.atlassian.utils.process.*;
 import com.google.common.collect.Lists;
 import org.codehaus.jackson.JsonNode;
@@ -24,6 +24,8 @@ import java.util.*;
 public class GitVersionTask implements TaskType
 {
     private static final String PREFIX = "GitVersion";
+    public static final String CAPABILITY_KEY_PREFIX = CapabilityDefaultsHelper.CAPABILITY_BUILDER_PREFIX + ".gitversion";
+    public static final String CAPABILITY_KEY = CAPABILITY_KEY_PREFIX + ".GitVersion";
     private final CapabilityContext capabilityContext;
 
     public GitVersionTask(CapabilityContext capabilityContext)
@@ -112,7 +114,7 @@ public class GitVersionTask implements TaskType
     @Nullable
     private String getGitVersionExecutable()
     {
-        return capabilityContext.getCapabilityValue(GitVersionCapability.CAPABILITY_KEY);
+        return capabilityContext.getCapabilityValue(GitVersionTask.CAPABILITY_KEY);
     }
 
     @Nullable

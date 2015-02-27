@@ -1,1 +1,1 @@
-[@ww.textfield labelKey="GitVersion.RepoPath" name="repoPath" descriptionKey="GitVersion.RepoPath.Description"/]
+[@ww.textfield labelKey="gitversion.repoPath" name="repoPath" descriptionKey="gitversion.repoPath.description"/]

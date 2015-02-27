@@ -3,11 +3,16 @@ package com.carolynvs.bamboo.plugin.gitversion;
 import com.atlassian.bamboo.collections.ActionParametersMap;
 import com.atlassian.bamboo.task.AbstractTaskConfigurator;
 import com.atlassian.bamboo.task.TaskDefinition;
+import com.atlassian.bamboo.task.TaskRequirementSupport;
+import com.atlassian.bamboo.v2.build.agent.capability.Requirement;
+import com.atlassian.bamboo.v2.build.agent.capability.RequirementImpl;
+import com.google.common.collect.Sets;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
+import java.util.Set;
 
-public class GitVersionTaskConfigurator extends AbstractTaskConfigurator
+public class GitVersionTaskConfigurator extends AbstractTaskConfigurator implements TaskRequirementSupport
 {
     public static final String REPO_PATH = "repoPath";
 
@@ -34,5 +39,14 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator
     {
         super.populateContextForView(context, taskDefinition);
         context.put(REPO_PATH, taskDefinition.getConfiguration().get(REPO_PATH));
+    }
+
+    @NotNull
+    @Override
+    public Set<Requirement> calculateRequirements(@NotNull TaskDefinition taskDefinition)
+    {
+        Set<Requirement> requirements = Sets.newHashSet();
+        requirements.add(new RequirementImpl(GitVersionTask.CAPABILITY_KEY, true, ".*"));
+        return requirements;
     }
 }
