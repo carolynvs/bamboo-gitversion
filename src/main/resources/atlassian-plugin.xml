@@ -22,9 +22,10 @@
         <resource type="download" name="icon" location="images/pluginLogo.png"/>
         <executable key="gitversion" nameKey="builder.gitversion.executableName" pathHelpKey="builder.gitversion.helpPath" primaryCapabilityProvider="true"/>
         <configuration class="com.carolynvs.bamboo.plugin.gitversion.GitVersionTaskConfigurator"/>
+        <capabilityDefaultsHelper class="com.carolynvs.bamboo.plugin.gitversion.GitVersionCapabilityDefaultsHelper"/>
         <resource type="freemarker" name="edit" location="task/edit.ftl"/>
         <resource type="freemarker" name="view" location="task/view.ftl"/>
     </taskType>
 
-    <component-import key="capabilityContext" interface="com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext" />
+    <component-import key="capabilityContext" interface="com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext"/>
 </atlassian-plugin>
