@@ -1,0 +1,31 @@
+<atlassian-plugin-marketing>
+
+    <!--Describe names and versions of compatible applications -->
+    <compatibility>
+        <product name="bamboo" min="5.7.0" max="5.7.2"/>
+    </compatibility>
+
+    <!-- Describe your add-on logo and banner. The banner is only displayed in the UPM. -->
+    <logo image="images/marketplace/plugin-logo.png"/>
+
+    <!-- Describe highlight and cropped highlight image assets, in order. -->
+    <highlights>
+        <highlight
+            title="Use any GitVersion Variable"
+            summary="All GitVersion variables are available in the current build and subsequent deployments"
+            image="images/marketplace/job-metadata.png"
+            cropped="images/marketplace/job-metadata-cropped.png">
+        </highlight>
+        <highlight
+            title="Semantically Version Releases and Deployments"
+            summary="Follow SemVer for your deployment projects and releases"
+            image="images/marketplace/release-versioning.png"
+            cropped="images/marketplace/release-versioning-cropped.png"/>
+        <highlight
+            title="Simple to Configure"
+            summary="Install GitVersion on your build agent and then use the GitVersion task after the source repository has been checked-out "
+            image="images/marketplace/task-definition.png"
+            cropped="images/marketplace/task-definition-cropped.png"/>
+    </highlights>
+
+</atlassian-plugin-marketing>
