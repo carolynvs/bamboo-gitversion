@@ -10,6 +10,7 @@ import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.task.TaskType;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext;
 import com.atlassian.bamboo.v2.build.agent.capability.CapabilityDefaultsHelper;
+import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.utils.process.*;
 import com.google.common.collect.Lists;
 import org.codehaus.jackson.JsonNode;
@@ -49,8 +50,9 @@ public class GitVersionTask implements TaskType
         if(!gitVersionOutput.Succeeded)
             return resultBuilder.failed().build();
 
-        Map<String, String> buildMetadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
-        saveVariables(gitVersionOutput.Variables, buildMetadata, buildLogger);
+        Map<String, String> jobMetadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
+        VariableContext planVariables = taskContext.getCommonContext().getVariableContext();
+        saveVariables(gitVersionOutput.Variables, jobMetadata, planVariables, buildLogger);
 
         return resultBuilder.success().build();
     }
@@ -96,7 +98,7 @@ public class GitVersionTask implements TaskType
     /**
      * Persist the GitVersion variables to the build's metadata
      */
-    private void saveVariables(JsonNode variables, Map<String, String> buildMetadata, BuildLogger buildLogger)
+    private void saveVariables(JsonNode variables, Map<String, String> buildMetadata, VariableContext planVariables, BuildLogger buildLogger)
     {
         for(Iterator<Map.Entry<String, JsonNode>> results = variables.getFields(); results.hasNext();)
         {
@@ -108,6 +110,7 @@ public class GitVersionTask implements TaskType
 
             buildLogger.addBuildLogEntry(String.format("%s=%s", key, value));
             buildMetadata.put(key, value);
+            planVariables.addResultVariable(key, value);
         }
     }
 
