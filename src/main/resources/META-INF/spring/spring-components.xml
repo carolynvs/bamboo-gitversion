@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:osgi="http://www.springframework.org/schema/osgi"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/osgi
+           http://www.springframework.org/schema/osgi/spring-osgi.xsd"
+       default-autowire="autodetect">
+
+    <!-- lack of full plugin2 support on remote agents requires to add all imported components explicitly -->
+    <osgi:reference id="capabilityContext">
+        <osgi:interfaces>
+            <value>com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext</value>
+        </osgi:interfaces>
+    </osgi:reference>
+
+</beans>
