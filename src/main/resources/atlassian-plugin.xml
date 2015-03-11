@@ -27,5 +27,10 @@
         <resource type="freemarker" name="view" location="task/view.ftl"/>
     </taskType>
 
+    <web-panel key="GitVersionPlanResultVariables" location="chainresult.summary.right">
+        <resource name="view" type="freemarker" location="/fragments/resultSummary.ftl" />
+        <context-provider class="com.carolynvs.bamboo.plugin.gitversion.GitVersionResultsContextProvider" />
+    </web-panel>
+
     <component-import key="capabilityContext" interface="com.atlassian.bamboo.v2.build.agent.capability.CapabilityContext"/>
 </atlassian-plugin>

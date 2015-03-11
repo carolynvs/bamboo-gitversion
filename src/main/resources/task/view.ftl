@@ -1,1 +1,2 @@
-[@ww.label labelKey="GitVersion.RepoPath" name="repoPath" descriptionKey="GitVersion.RepoPath.Description"/]
+[@ww.label labelKey="GitVersion.repoPath" name="repoPath" descriptionKey="gitversion.repoPath.description"/]
+[@ww.label labelKey="gitversion.savedVars" name="savedVars" descriptionKey="gitversion.savedVars.description"/]

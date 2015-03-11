@@ -15,6 +15,7 @@ import java.util.Set;
 public class GitVersionTaskConfigurator extends AbstractTaskConfigurator implements TaskRequirementSupport
 {
     public static final String REPO_PATH = "repoPath";
+    public static final String SAVED_VARIABLES = "savedVars";
 
     @NotNull
     @Override
@@ -23,6 +24,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
         final Map<String, String> config = super.generateTaskConfigMap(params, previousTaskDefinition);
 
         config.put(REPO_PATH, params.getString(REPO_PATH));
+        config.put(SAVED_VARIABLES, params.getString(SAVED_VARIABLES));
 
         return config;
     }
@@ -32,6 +34,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
     {
         super.populateContextForEdit(context, taskDefinition);
         context.put(REPO_PATH, taskDefinition.getConfiguration().get(REPO_PATH));
+        context.put(SAVED_VARIABLES, taskDefinition.getConfiguration().get(SAVED_VARIABLES));
     }
 
     @Override
@@ -39,6 +42,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
     {
         super.populateContextForView(context, taskDefinition);
         context.put(REPO_PATH, taskDefinition.getConfiguration().get(REPO_PATH));
+        context.put(SAVED_VARIABLES, taskDefinition.getConfiguration().get(SAVED_VARIABLES));
     }
 
     @NotNull

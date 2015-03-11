@@ -24,7 +24,7 @@ import java.util.*;
 
 public class GitVersionTask implements TaskType
 {
-    private static final String PREFIX = "GitVersion";
+    public static final String PREFIX = "GitVersion";
     public static final String CAPABILITY_KEY_PREFIX = CapabilityDefaultsHelper.CAPABILITY_BUILDER_PREFIX + ".gitversion";
     public static final String CAPABILITY_KEY = CAPABILITY_KEY_PREFIX + ".GitVersion";
     private final CapabilityContext capabilityContext;
@@ -36,7 +36,8 @@ public class GitVersionTask implements TaskType
 
     @NotNull
     @Override
-    public TaskResult execute(@NotNull TaskContext taskContext) {
+    public TaskResult execute(@NotNull TaskContext taskContext)
+    {
         TaskResultBuilder resultBuilder = TaskResultBuilder.create(taskContext);
         BuildLogger buildLogger = taskContext.getBuildLogger();
 
@@ -52,7 +53,7 @@ public class GitVersionTask implements TaskType
 
         Map<String, String> jobMetadata = taskContext.getBuildContext().getBuildResult().getCustomBuildData();
         VariableContext planVariables = taskContext.getCommonContext().getVariableContext();
-        saveVariables(gitVersionOutput.Variables, jobMetadata, planVariables, buildLogger);
+        saveVariables(config, gitVersionOutput.Variables, jobMetadata, planVariables, buildLogger);
 
         return resultBuilder.success().build();
     }
@@ -84,6 +85,7 @@ public class GitVersionTask implements TaskType
     {
         ConfigurationMap taskConfig = taskContext.getConfigurationMap();
         String repoPath =  taskConfig.get(GitVersionTaskConfigurator.REPO_PATH);
+        String savedVars =  taskConfig.get(GitVersionTaskConfigurator.SAVED_VARIABLES);
         File buildDirectory = taskContext.getWorkingDirectory();
         File repo = new File(buildDirectory, repoPath);
 
@@ -92,19 +94,21 @@ public class GitVersionTask implements TaskType
         String branch = buildMetaData.get("planRepository.branchName");
         String revision = buildMetaData.get("planRepository.revision");
 
-        return new GitVersionTaskConfiguration(repo, branch, revision);
+        return new GitVersionTaskConfiguration(repo, branch, revision, savedVars);
     }
 
     /**
      * Persist the GitVersion variables to the build's metadata
      */
-    private void saveVariables(JsonNode variables, Map<String, String> buildMetadata, VariableContext planVariables, BuildLogger buildLogger)
+    private void saveVariables(GitVersionTaskConfiguration config, JsonNode variables, Map<String, String> buildMetadata, VariableContext planVariables, BuildLogger buildLogger)
     {
         for(Iterator<Map.Entry<String, JsonNode>> results = variables.getFields(); results.hasNext();)
         {
             Map.Entry<String, JsonNode> result = results.next();
-            String key = String.format("%s.%s", PREFIX, result.getKey());
+            if(!config.SavedVars.isEmpty() && !config.SavedVars.contains(result.getKey()))
+                continue;
 
+            String key = String.format("%s.%s", PREFIX, result.getKey());
             JsonNode jsonValue = result.getValue();
             String value = jsonValue.isTextual() ? jsonValue.getTextValue() : jsonValue.toString();
 
@@ -173,12 +177,21 @@ public class GitVersionTask implements TaskType
         public final File Repository;
         public final String Branch;
         public final String Revision;
+        public final Set<String> SavedVars;
 
-        public GitVersionTaskConfiguration(File repository, String branch, String revision)
+        public GitVersionTaskConfiguration(File repository, String branch, String revision, String savedVars)
         {
             Repository = repository;
             Branch = branch;
             Revision = revision;
+
+            SavedVars = new HashSet<String>();
+            for(String variable : savedVars.split(" "))
+            {
+                if(variable.isEmpty())
+                    continue;
+                SavedVars.add(variable);
+            }
         }
     }
 
