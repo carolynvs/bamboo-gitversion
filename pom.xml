@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.carolynvs</groupId>
     <artifactId>gitversion</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.1</version>
 
     <organization>
         <name>Carolyn Van Slyck</name>
@@ -19,7 +19,7 @@
     <packaging>atlassian-plugin</packaging>
 
     <properties>
-        <bamboo.version>5.7.0</bamboo.version>
+        <bamboo.version>5.9.7</bamboo.version>
         <bamboo.data.version>3.2.2</bamboo.data.version>
         <amps.version>5.0.13</amps.version>
         <plugin.testrunner.version>1.2.0</plugin.testrunner.version>
