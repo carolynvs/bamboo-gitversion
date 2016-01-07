@@ -16,6 +16,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
 {
     public static final String REPO_PATH = "repoPath";
     public static final String SAVED_VARIABLES = "savedVars";
+    public static final String ARGS = "args";
 
     @NotNull
     @Override
@@ -25,6 +26,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
 
         config.put(REPO_PATH, params.getString(REPO_PATH));
         config.put(SAVED_VARIABLES, params.getString(SAVED_VARIABLES));
+        config.put(ARGS, params.getString(ARGS));
 
         return config;
     }
@@ -35,6 +37,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
         super.populateContextForEdit(context, taskDefinition);
         context.put(REPO_PATH, taskDefinition.getConfiguration().get(REPO_PATH));
         context.put(SAVED_VARIABLES, taskDefinition.getConfiguration().get(SAVED_VARIABLES));
+        context.put(ARGS, taskDefinition.getConfiguration().get(ARGS));
     }
 
     @Override
@@ -43,6 +46,7 @@ public class GitVersionTaskConfigurator extends AbstractTaskConfigurator impleme
         super.populateContextForView(context, taskDefinition);
         context.put(REPO_PATH, taskDefinition.getConfiguration().get(REPO_PATH));
         context.put(SAVED_VARIABLES, taskDefinition.getConfiguration().get(SAVED_VARIABLES));
+        context.put(ARGS, taskDefinition.getConfiguration().get(ARGS));
     }
 
     @NotNull

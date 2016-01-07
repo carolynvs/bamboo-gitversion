@@ -47,7 +47,7 @@ public class GitVersionTask implements TaskType
         if (!fixDetachedHeadSucceeded)
             return resultBuilder.failed().build();
 
-        GitVersionOutput gitVersionOutput = executeGitVersion(config.Repository, buildLogger);
+        GitVersionOutput gitVersionOutput = executeGitVersion(config.Repository, config.Args, buildLogger);
         if(!gitVersionOutput.Succeeded)
             return resultBuilder.failed().build();
 
@@ -86,6 +86,7 @@ public class GitVersionTask implements TaskType
         ConfigurationMap taskConfig = taskContext.getConfigurationMap();
         String repoPath =  taskConfig.get(GitVersionTaskConfigurator.REPO_PATH);
         String savedVars =  taskConfig.get(GitVersionTaskConfigurator.SAVED_VARIABLES);
+        String args =  taskConfig.get(GitVersionTaskConfigurator.ARGS);
         File buildDirectory = taskContext.getWorkingDirectory();
         File repo = new File(buildDirectory, repoPath);
 
@@ -94,7 +95,7 @@ public class GitVersionTask implements TaskType
         String branch = buildMetaData.get("planRepository.branchName");
         String revision = buildMetaData.get("planRepository.revision");
 
-        return new GitVersionTaskConfiguration(repo, branch, revision, savedVars);
+        return new GitVersionTaskConfiguration(repo, branch, revision, savedVars, args);
     }
 
     /**
@@ -130,11 +131,11 @@ public class GitVersionTask implements TaskType
         return capabilityContext.getCapabilityValue(GitCapabilityTypeModule.GIT_CAPABILITY);
     }
 
-    private GitVersionOutput executeGitVersion(File workingDirectory, BuildLogger buildLogger)
+    private GitVersionOutput executeGitVersion(File workingDirectory, String args, BuildLogger buildLogger)
     {
         StringOutputHandler outputHandler = new StringOutputHandler();
         ExternalProcess process = new ExternalProcessBuilder()
-                .command(Lists.newArrayList(getGitVersionExecutable()), workingDirectory)
+                .command(Lists.newArrayList(getGitVersionExecutable(), args), workingDirectory)
                 .handler(new BambooProcessHandler(outputHandler, outputHandler))
                 .build();
         buildLogger.addBuildLogEntry(String.format("Executing %s", process.getCommandLine()));
@@ -178,12 +179,14 @@ public class GitVersionTask implements TaskType
         public final String Branch;
         public final String Revision;
         public final Set<String> SavedVars;
+        public final String Args;
 
-        public GitVersionTaskConfiguration(File repository, String branch, String revision, String savedVars)
+        public GitVersionTaskConfiguration(File repository, String branch, String revision, String savedVars, String args)
         {
             Repository = repository;
             Branch = branch;
             Revision = revision;
+            Args = args;
 
             SavedVars = new HashSet<String>();
             for(String variable : savedVars.split(" "))
