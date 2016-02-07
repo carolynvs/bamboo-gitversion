@@ -87,6 +87,9 @@ public class GitVersionTask implements TaskType
         String repoPath =  taskConfig.get(GitVersionTaskConfigurator.REPO_PATH);
         String savedVars =  taskConfig.get(GitVersionTaskConfigurator.SAVED_VARIABLES);
         String args =  taskConfig.get(GitVersionTaskConfigurator.ARGS);
+        if(args == null)
+            args = "";
+
         File buildDirectory = taskContext.getWorkingDirectory();
         File repo = new File(buildDirectory, repoPath);
 
@@ -133,9 +136,11 @@ public class GitVersionTask implements TaskType
 
     private GitVersionOutput executeGitVersion(File workingDirectory, String args, BuildLogger buildLogger)
     {
+        List gitVersionArgs = Lists.asList(getGitVersionExecutable(), args.split(" "));
+
         StringOutputHandler outputHandler = new StringOutputHandler();
         ExternalProcess process = new ExternalProcessBuilder()
-                .command(Lists.newArrayList(getGitVersionExecutable(), args), workingDirectory)
+                .command(gitVersionArgs, workingDirectory)
                 .handler(new BambooProcessHandler(outputHandler, outputHandler))
                 .build();
         buildLogger.addBuildLogEntry(String.format("Executing %s", process.getCommandLine()));
